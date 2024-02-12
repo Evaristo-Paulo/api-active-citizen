@@ -28,9 +28,19 @@ class User(db.Model):
     reports = db.relationship('Report', backref='user', lazy=True)
 
 
+class Report(db.Model):
+    __tablename__ = 'reports'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    location = db.Column(db.String(80), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+
 @app.route('/')
 def index():
     return '<h1>Hello World!</h1>'
+
 
 if __name__ == '__main__':
     with app.app_context():
