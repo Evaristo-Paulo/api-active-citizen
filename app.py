@@ -179,7 +179,7 @@ def get_users():
 @login_required
 def add_report():
     data = request.json
-    current_user = 2
+    logged_user_id = int(current_user.id)
 
     if 'date' in data and 'time' in data and 'location' in data and 'description' in data:
         # GENERATE DATE
@@ -194,7 +194,7 @@ def add_report():
         hours, min = list_time
         datetime_time = time(hours, min, 0)
 
-        report = Report(user_id=current_user, date=datetime_date, time=datetime_time, location=data['location'], description=data['description'])
+        report = Report(user_id=logged_user_id, date=datetime_date, time=datetime_time, location=data['location'], description=data['description'])
 
         db.session.add(report)
         db.session.commit()
@@ -207,7 +207,12 @@ def add_report():
 @app.route('/api/reports/delete/<int:report_id>', methods=["DELETE"])
 @login_required
 def delete_report(report_id):
-    report = Report.query.get(report_id)
+    logged_user_id = int(current_user.id)
+
+    report = Report.query.filter(
+        Report.user_id==logged_user_id, 
+        Report.id==report_id
+        ).first()
 
     if report:
         db.session.delete(report)
