@@ -242,11 +242,16 @@ def delete_report(report_id):
 def get_report_details(report_id):
     report = Report.query.get(report_id)
 
-    if report:
+    if report: 
         return jsonify({ 
             "id": report.id,
             "date": report.date,
+            "time": str(report.time),
+            "location": report.location,
+            "file": report.file,
             "description": report.description,
+            "active_citizen_id": report.user_id,
+            "active_citizen_name": report.user.username,
         })
     
     return jsonify({"message": "Report not found"}), 404
@@ -313,11 +318,8 @@ def get_reports():
         item = { 
             "id": report.id,
             "date": report.date,
-            "time": str(report.time),
             "location": report.location,
-            "file": report.file,
             "description": report.description,
-            "active_citizen_id": report.user_id,
             "active_citizen_name": report.user.username,
         }
         items.append(item)
