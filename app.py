@@ -290,6 +290,9 @@ def update_report(report_id):
 
     if 'description' in data:
         report.description = data['description']
+
+    if 'file' in data:
+        report.file = save_picture(data['file'])
     
     db.session.commit()
     return jsonify({"message": "Report updated successfully"})
