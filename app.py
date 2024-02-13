@@ -3,6 +3,11 @@ import bcrypt
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, time
+import secrets
+import base64
+from io import BytesIO
+from PIL import Image
+import imghdr
 from flask_cors import CORS
 from flask_login import UserMixin, current_user, login_user, logout_user, LoginManager, login_required
 
@@ -44,8 +49,28 @@ class Report(db.Model):
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
     location = db.Column(db.String(80), nullable=False)
+    file = db.Column(db.String, nullable=True)
     description = db.Column(db.Text, nullable=False)
 
+
+
+def save_picture(file):
+    random_hex = secrets.token_hex(8)
+    decoded_file = base64.b64decode(file)
+    extension = imghdr.what(None, h=decoded_file)
+    media_file = str(random_hex) + '.' + str(extension)
+
+    starter = file.find(',')
+    image_data = file[starter+1:]
+    image_data = bytes(image_data, encoding="ascii")
+    file_path = os.path.join(app.root_path, 'static/profile_pics', media_file)
+
+    output_size = (125, 125)
+    i = Image.open(BytesIO(base64.b64decode(image_data))).convert('RGB')
+    i.thumbnail(output_size)
+    i.save(file_path)
+
+    return media_file
 
 
 @login_manager.user_loader
@@ -164,6 +189,8 @@ def add_report():
     data = request.json
     logged_user_id = int(current_user.id)
 
+    
+
     if 'date' in data and 'time' in data and 'location' in data and 'description' in data:
         # GENERATE DATE
         str_date = data['date']
@@ -177,7 +204,12 @@ def add_report():
         hours, min = list_time
         datetime_time = time(hours, min, 0)
 
-        report = Report(user_id=logged_user_id, date=datetime_date, time=datetime_time, location=data['location'], description=data['description'])
+        # GENERATE MEDIA FILE
+        file = ''
+        if 'file' in data:
+            file = save_picture(data['file'])
+
+        report = Report(user_id=logged_user_id, file=file, date=datetime_date, time=datetime_time, location=data['location'], description=data['description'])
 
         db.session.add(report)
         db.session.commit()
@@ -280,6 +312,7 @@ def get_reports():
             "date": report.date,
             "time": str(report.time),
             "location": report.location,
+            "file": report.file,
             "description": report.description,
             "active_citizen_id": report.user_id,
             "active_citizen_name": report.user.username,
