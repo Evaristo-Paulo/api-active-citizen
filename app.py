@@ -106,21 +106,15 @@ def add_user():
     return jsonify({"message": "Invalid user data"}), 400
 
 
-@app.route('/api/users/delete/<int:user_id>', methods=["DELETE"])
-@login_required
-def delete_user(user_id):
-    user = User.query.get(user_id)
-
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({"message": "User deleted successfully"})
-    return jsonify({"message": "User not found"}), 404
-
 @app.route('/api/users/show/<int:user_id>', methods=['GET'])
 @login_required
 def get_user_details(user_id):
-    user = User.query.get(user_id)
+    logged_user_id = int(current_user.id) 
+
+    if user_id != logged_user_id:
+        logged_user_id = -1
+
+    user = User.query.filter_by(id=logged_user_id).first()
 
     if user:
         return jsonify({ 
@@ -134,7 +128,12 @@ def get_user_details(user_id):
 @app.route('/api/users/update/<int:user_id>', methods=["PUT"])
 @login_required
 def update_user(user_id):
-    user = User.query.get(user_id)
+    logged_user_id = int(current_user.id) 
+
+    if user_id != logged_user_id:
+        logged_user_id = -1
+
+    user = User.query.filter_by(id=logged_user_id).first()
 
     if user is None:
         return jsonify({"message": "User not found"}), 404
@@ -157,23 +156,7 @@ def update_user(user_id):
     db.session.commit()
     return jsonify({"message": "User updated successfully"})
 
-@app.route('/api/users/', methods=["GET"])
-@login_required
-def get_users():
-    users = User.query.all()
-    items = list()
 
-    for user in users:
-        item = { 
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "phone": user.phone,
-        }
-        items.append(item)
-
-    return jsonify({"Users": items})
- 
 # REPORT
 @app.route('/api/reports/add', methods=["POST"])
 @login_required
@@ -242,7 +225,12 @@ def get_report_details(report_id):
 def update_report(report_id):
     report = Report.query.get(report_id)
 
-    print(report)
+    logged_user_id = int(current_user.id)
+
+    report = Report.query.filter(
+        Report.user_id==logged_user_id, 
+        Report.id==report_id
+        ).first()
 
     if report is None:
         return jsonify({"message": "Report not found"}), 404
@@ -276,8 +264,14 @@ def update_report(report_id):
 
     
 @app.route('/api/reports/', methods=["GET"])
+@login_required
 def get_reports():
-    reports = Report.query.all()
+    logged_user_id = int(current_user.id)
+
+    reports = Report.query.filter(
+        Report.user_id==logged_user_id, 
+        ).all()
+
     items = list()
 
     for report in reports:
@@ -286,7 +280,9 @@ def get_reports():
             "date": report.date,
             "time": str(report.time),
             "location": report.location,
-            "description": report.description
+            "description": report.description,
+            "active_citizen_id": report.user_id,
+            "active_citizen_name": report.user.username,
         }
         items.append(item)
 
