@@ -2,6 +2,7 @@ import os
 import bcrypt
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import desc
 from datetime import datetime, date, time
 import secrets
 import base64
@@ -24,35 +25,6 @@ db = SQLAlchemy(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 CORS(app)
-
-
-class TimestampModel(db.Model):
-    __abstract__ = True
-    created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
-
-
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False, unique=True)
-    password = db.Column(db.String(30), nullable=False)
-    email = db.Column(db.String(30), nullable=True)
-    phone = db.Column(db.String(20), nullable=True)
-    reports = db.relationship('Report', backref='user', lazy=True)
-
-
-class Report(db.Model):
-    __tablename__ = 'reports'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
-    location = db.Column(db.String(80), nullable=False)
-    file = db.Column(db.String, nullable=True)
-    description = db.Column(db.Text, nullable=False)
-
-
 
 def save_picture(file):
     random_hex = secrets.token_hex(8)
@@ -310,7 +282,7 @@ def get_reports():
 
     reports = Report.query.filter(
         Report.user_id==logged_user_id, 
-        ).all()
+        ).order_by(desc(Report.id))
 
     items = list()
 
