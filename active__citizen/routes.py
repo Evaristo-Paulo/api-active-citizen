@@ -1,54 +1,10 @@
-import os
+from active__citizen import app, db
 import bcrypt
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import request, jsonify
 from sqlalchemy import desc
-from datetime import datetime, date, time
-import secrets
-import base64
-from io import BytesIO
-from PIL import Image
-import imghdr
-from flask_cors import CORS
-from flask_login import UserMixin, current_user, login_user, logout_user, LoginManager, login_required
-
-
-BASEDIR = os.path.abspath(os.path.dirname(__file__))
-
-app = Flask(__name__)
-# CONFIGUAR AUTENTICAÇÃO
-app.config['SECRET_KEY'] = 'wedev.com'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASEDIR, 'reporting.db')
-
-login_manager = LoginManager()
-db = SQLAlchemy(app)
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-CORS(app)
-
-def save_picture(file):
-    random_hex = secrets.token_hex(8)
-    decoded_file = base64.b64decode(file)
-    extension = imghdr.what(None, h=decoded_file)
-    media_file = str(random_hex) + '.' + str(extension)
-
-    starter = file.find(',')
-    image_data = file[starter+1:]
-    image_data = bytes(image_data, encoding="ascii")
-    file_path = os.path.join(app.root_path, 'static/profile_pics', media_file)
-
-    output_size = (125, 125)
-    i = Image.open(BytesIO(base64.b64decode(image_data))).convert('RGB')
-    i.thumbnail(output_size)
-    i.save(file_path)
-
-    return media_file
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
+from datetime import date, time
+from flask_login import current_user, login_user, logout_user, login_required
+from active__citizen.models import Report, User
 
 @app.route('/api/login', methods=["POST"])
 def login():
@@ -274,7 +230,7 @@ def update_report(report_id):
     db.session.commit()
     return jsonify({"message": "Report updated successfully"})
 
-    
+
 @app.route('/api/reports/', methods=["GET"])
 @login_required
 def get_reports():
@@ -297,9 +253,7 @@ def get_reports():
         items.append(item)
 
     return jsonify({"Reports": items})
- 
+
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    print(f'routes.py')
